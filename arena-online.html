@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arena Battle — Online</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg: #070a0f;
+  --panel: #111520;
+  --panel2: #161c28;
+  --panel3: #1c2435;
+  --border: #1e2a3d;
+  --border2: #263347;
+  --blue: #38bdf8;
+  --blue-glow: rgba(56,189,248,0.22);
+  --blue-deep: rgba(56,189,248,0.07);
+  --red: #fb7185;
+  --red-glow: rgba(251,113,133,0.22);
+  --red-deep: rgba(251,113,133,0.07);
+  --gold: #fbbf24;
+  --gold-glow: rgba(251,191,36,0.3);
+  --text: #e2e8f0;
+  --text-mid: #94a3b8;
+  --text-dim: #475569;
+  --green: #34d399;
+  --green-glow: rgba(52,211,153,0.3);
+  --orange: #fb923c;
+  --cell: 56px;
+  --fd: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+  --fm: 'Share Tech Mono', 'Courier New', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--fd); }
+
+/* ── BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 55% 40% at 20% 50%, rgba(56,189,248,0.05) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 40% at 80% 50%, rgba(251,113,133,0.05) 0%, transparent 65%),
+    repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(255,255,255,0.012) 59px, rgba(255,255,255,0.012) 60px),
+    repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(255,255,255,0.012) 59px, rgba(255,255,255,0.012) 60px);
+  pointer-events: none; z-index: 0;
+}
+
+/* ── VIEWS ── */
+.view { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1; transition: opacity 0.3s; }
+.view.hidden { opacity: 0; pointer-events: none; }
+
+/* ════════════════════════════════════════════
+   LOBBY
+════════════════════════════════════════════ */
+#view-lobby { flex-direction: column; gap: 0; }
+
+#lobby-box {
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: 28px;
+  padding: 52px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(255,255,255,0.04);
+  min-width: 440px;
+  position: relative;
+  overflow: hidden;
+}
+
+#lobby-box::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--blue), #818cf8, var(--red));
+}
+
+.game-title {
+  font-size: 54px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; line-height: 1;
+  background: linear-gradient(135deg, var(--blue) 0%, #a78bfa 50%, var(--red) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+.game-sub {
+  font-size: 11px; letter-spacing: 0.25em; color: var(--text-dim);
+  text-transform: uppercase; font-family: var(--fm); margin-top: -20px;
+}
+
+.divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); }
+
+.field-group { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.field-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim); font-family: var(--fm); }
+
+.input {
+  background: var(--panel2); border: 1px solid var(--border2); border-radius: 12px;
+  padding: 13px 18px; font-family: var(--fm); font-size: 15px; color: var(--text);
+  width: 100%; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-glow); }
+.input.code-input { font-size: 24px; letter-spacing: 0.35em; text-align: center; text-transform: uppercase; }
+.input::placeholder { color: var(--text-dim); }
+
+.btn-row { display: flex; gap: 10px; width: 100%; }
+
+.btn {
+  flex: 1; padding: 14px 20px; border-radius: 12px; border: 1px solid var(--border2);
+  font-family: var(--fd); font-size: 15px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; cursor: pointer; transition: all 0.2s; outline: none;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  border-color: transparent; color: white;
+  box-shadow: 0 4px 20px rgba(14,165,233,0.3);
+}
+.btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(14,165,233,0.5); }
+.btn-secondary { background: var(--panel2); color: var(--text-mid); }
+.btn-secondary:hover { color: var(--text); border-color: var(--border2); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Server URL row */
+.server-row { display: flex; gap: 8px; width: 100%; align-items: flex-end; }
+.server-row .input { font-size: 13px; letter-spacing: 0; flex: 1; }
+.server-row .btn { flex: none; padding: 13px 16px; font-size: 12px; }
+
+/* Status badge */
+.status-badge {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--fm); font-size: 11px; color: var(--text-dim);
+  padding: 8px 16px; border-radius: 8px; background: var(--panel2);
+  border: 1px solid var(--border); width: 100%; justify-content: center;
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-green { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.dot-red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.dot-yellow { background: var(--gold); box-shadow: 0 0 6px var(--gold); animation: blink 1.2s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+/* Room code display */
+.big-code {
+  font-family: var(--fm); font-size: 40px; letter-spacing: 0.45em;
+  color: var(--blue); text-shadow: 0 0 24px var(--blue-glow);
+  background: var(--blue-deep); border: 1px solid rgba(56,189,248,0.2);
+  border-radius: 14px; padding: 18px 32px; width: 100%; text-align: center;
+  user-select: all; cursor: pointer;
+}
+.big-code:active::after { content: ' COPIED'; font-size: 18px; opacity: 0.6; }
+
+.tip { font-size: 11px; color: var(--text-dim); font-family: var(--fm); text-align: center; line-height: 1.6; }
+.tip a { color: var(--blue); text-decoration: none; }
+
+/* ════════════════════════════════════════════
+   GAME
+════════════════════════════════════════════ */
+#view-game {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* TOP HUD */
+#hud {
+  display: flex; align-items: stretch; gap: 10px;
+  width: calc(10 * var(--cell) + 22px);
+}
+
+.hud-player {
+  flex: 1; background: var(--panel); border: 1px solid var(--border);
+  border-radius: 14px; padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 3px; position: relative; overflow: hidden;
+}
+.hud-player::before { content:''; position:absolute; top:0;left:0;right:0; height:2px; }
+.hp1::before { background: linear-gradient(90deg, transparent, var(--blue), transparent); }
+.hp2::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+
+.hud-name { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-family: var(--fm); font-weight: 600; }
+.hp1 .hud-name { color: var(--blue); }
+.hp2 .hud-name { color: var(--red); }
+
+.hud-stars { font-size: 17px; letter-spacing: 4px; }
+.s-on { color: var(--gold); filter: drop-shadow(0 0 5px var(--gold-glow)); }
+.s-off { color: var(--border2); }
+.hud-count { font-size: 10px; color: var(--text-dim); font-family: var(--fm); }
+
+#hud-mid {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 14px; padding: 8px 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  min-width: 120px;
+}
+#round-lbl { font-size: 10px; letter-spacing: 0.18em; color: var(--text-dim); text-transform: uppercase; font-family: var(--fm); }
+#timer {
+  font-size: 38px; font-weight: 700; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; font-family: var(--fm);
+}
+.t-ok { color: var(--text); }
+.t-warn { color: var(--gold); }
+.t-hot { color: var(--red); animation: t-shake 0.25s ease; }
+@keyframes t-shake { 25%{transform:translateX(-2px)} 75%{transform:translateX(2px)} }
+
+/* STATUS */
+#status {
+  background: var(--panel2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 16px;
+  font-family: var(--fm); font-size: 11px; color: var(--text-dim);
+  letter-spacing: 0.08em; text-align: center;
+  width: calc(10 * var(--cell) + 22px);
+}
+
+/* BOARD */
+#board-wrap {
+  background: var(--panel); border: 1px solid var(--border2);
+  border-radius: 16px; padding: 11px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  position: relative; overflow: hidden;
+}
+
+#board-wrap::after {
+  content: '';
+  position: absolute;
+  left: 11px; right: 11px;
+  top: calc(11px + 5 * var(--cell));
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  pointer-events: none; z-index: 2;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(10, var(--cell));
+  grid-template-rows: repeat(10, var(--cell));
+  position: relative;
+}
+
+.cell {
+  width: var(--cell); height: var(--cell);
+  border: 1px solid rgba(255,255,255,0.03);
+  position: relative; transition: background 0.12s;
+}
+.cell.z-p1 { background: rgba(56,189,248,0.02); cursor: pointer; }
+.cell.z-p2 { background: rgba(251,113,133,0.02); }
+.cell.z-p1:hover { background: rgba(56,189,248,0.08); }
+.cell.z-mine { cursor: pointer; }
+.cell.z-mine:hover { background: rgba(56,189,248,0.09); }
+
+body.role-p2 .cell.z-p1 { background: rgba(251,113,133,0.02); cursor: default; }
+body.role-p2 .cell.z-p1:hover { background: rgba(251,113,133,0.02); }
+body.role-p2 .cell.z-p2 { background: rgba(56,189,248,0.02); cursor: pointer; }
+body.role-p2 .cell.z-p2:hover { background: rgba(56,189,248,0.09); }
+
+/* UNITS */
+.unit {
+  position: absolute;
+  width: calc(var(--cell) - 4px); height: calc(var(--cell) - 4px);
+  top: 2px; left: 2px;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  pointer-events: none; z-index: 10;
+  transition: top 0.45s cubic-bezier(0.4,0,0.2,1), left 0.45s cubic-bezier(0.4,0,0.2,1);
+  animation: u-in 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes u-in { from{opacity:0;transform:scale(0.4) translateY(8px)} to{opacity:1;transform:none} }
+@keyframes u-die { to{opacity:0;transform:scale(0) rotate(40deg)} }
+@keyframes u-atk { 0%{transform:scale(1);filter:brightness(1)} 40%{transform:scale(1.28);filter:brightness(2)} 100%{transform:scale(1);filter:brightness(1)} }
+.unit.attacking { animation: u-atk 0.35s ease forwards !important; }
+
+.unit svg { width: 34px; height: 34px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.8)); }
+
+.hp-bar { width: 46px; height: 3px; background: rgba(0,0,0,0.55); border-radius: 2px; overflow: hidden; margin-bottom: 2px; }
+.hp-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+.unit.blue .hp-fill { background: linear-gradient(90deg, #0ea5e9, var(--blue)); box-shadow: 0 0 4px var(--blue-glow); }
+.unit.red  .hp-fill { background: linear-gradient(90deg, #f43f5e, var(--red));  box-shadow: 0 0 4px var(--red-glow); }
+
+/* DAMAGE FLOAT */
+@keyframes dmg { to{opacity:0;transform:translateY(-28px) scale(0.8)} }
+.dmg { position:absolute;font-family:var(--fm);font-size:11px;font-weight:700;pointer-events:none;z-index:20;animation:dmg 0.85s ease forwards; }
+.dmg.blue{color:var(--blue)} .dmg.red{color:var(--red)}
+
+/* DECK */
+#deck-area {
+  display: flex; gap: 10px; align-items: center;
+  width: calc(10 * var(--cell) + 22px);
+}
+
+#deck { display: flex; gap: 7px; flex: 1; }
+
+.card {
+  flex: 1; background: var(--panel); border: 1px solid var(--border2);
+  border-radius: 12px; padding: 10px 8px;
+  cursor: pointer; transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), border-color 0.18s, box-shadow 0.18s;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  user-select: none; position: relative; overflow: hidden;
+}
+.card::after { content:''; position:absolute; bottom:0;left:0;right:0; height:2px; background:var(--blue); transform:scaleX(0); transition:transform 0.2s; }
+.card:hover { transform:translateY(-5px) scale(1.03); border-color:rgba(56,189,248,0.35); }
+.card:hover::after { transform:scaleX(1); }
+.card.sel { border-color:var(--blue); box-shadow:0 0 0 2px var(--blue-glow),0 8px 24px rgba(56,189,248,0.25); transform:translateY(-5px); }
+.card.sel::after { transform:scaleX(1); }
+.card svg { width:26px;height:26px; }
+.c-name { font-size:11px;font-weight:600;letter-spacing:0.05em;text-align:center; }
+.c-stat { font-size:9px;color:var(--text-dim);font-family:var(--fm);display:flex;gap:5px; }
+
+#scoreboard {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 5px; min-width: 95px;
+}
+.sb-row { display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--fm);font-size:11px; }
+.sb-label { color:var(--text-dim); font-size:9px; letter-spacing:0.1em; }
+.sb-val { font-size:14px;font-weight:700; }
+.sb-val.blue{color:var(--blue)} .sb-val.red{color:var(--red)}
+
+/* ════════════════════════════════════════════
+   ROUND BANNER
+════════════════════════════════════════════ */
+#banner {
+  position: fixed; inset: 0; z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; opacity: 0; transition: opacity 0.3s;
+}
+#banner.show { opacity: 1; }
+#banner-inner { text-align: center; animation: banner-pop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes banner-pop { from{transform:scale(0.6)} to{transform:scale(1)} }
+.b-label { font-size:13px;letter-spacing:0.3em;color:var(--text-dim);text-transform:uppercase;font-family:var(--fm); }
+.b-num {
+  font-size:90px;font-weight:700;line-height:1;letter-spacing:-0.02em;
+  background:linear-gradient(135deg,var(--blue),#a78bfa,var(--red));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+
+/* ════════════════════════════════════════════
+   END SCREEN
+════════════════════════════════════════════ */
+#view-end {
+  flex-direction: column; gap: 0;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(14px);
+}
+#end-card {
+  background: var(--panel); border: 1px solid var(--border2);
+  border-radius: 28px; padding: 56px 72px;
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.04);
+  position: relative; overflow: hidden;
+}
+#end-card::before { content:''; position:absolute;top:0;left:0;right:0;height:3px; background:linear-gradient(90deg,var(--blue),#818cf8,var(--red)); }
+.e-label { font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:var(--text-dim);font-family:var(--fm); }
+#end-title { font-size:50px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;line-height:1; }
+#end-stars { font-size:32px;letter-spacing:8px; }
+#end-detail { font-family:var(--fm);font-size:13px;color:var(--text-dim); }
+
+/* ════════════════════════════════════════════
+   CONNECTION INDICATOR
+════════════════════════════════════════════ */
+#conn-indicator {
+  position: fixed; top:12px; right:16px; z-index:999;
+  display: flex; align-items:center; gap:7px;
+  font-family:var(--fm); font-size:10px; color:var(--text-dim);
+  background: var(--panel); border:1px solid var(--border);
+  border-radius:8px; padding:5px 12px;
+}
+
+/* ════════════════════════════════════════════
+   DISCONNECTED OVERLAY
+════════════════════════════════════════════ */
+#disc-overlay {
+  display:none; position:fixed; inset:0; z-index:800;
+  background:rgba(0,0,0,0.75); backdrop-filter:blur(8px);
+  align-items:center; justify-content:center;
+}
+#disc-overlay.show { display:flex; }
+#disc-box {
+  background:var(--panel); border:1px solid var(--border2);
+  border-radius:20px; padding:40px 56px;
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+  text-align:center;
+}
+.disc-icon { font-size:40px; }
+.disc-title { font-size:28px;font-weight:700;color:var(--red); }
+.disc-msg { font-family:var(--fm);font-size:12px;color:var(--text-dim);line-height:1.6; }
+</style>
+</head>
+<body>
+
+<!-- CONNECTION INDICATOR -->
+<div id="conn-indicator">
+  <div class="dot dot-red" id="conn-dot"></div>
+  <span id="conn-text">NOT CONNECTED</span>
+</div>
+
+<!-- ── LOBBY ─────────────────────────────────────────────────────────── -->
+<div class="view" id="view-lobby">
+  <div id="lobby-box">
+    <div class="game-title">ARENA</div>
+    <div class="game-sub">Online Multiplayer — Cross-Device</div>
+
+    <!-- Server URL -->
+    <div class="field-group">
+      <div class="field-label">Server Address</div>
+      <div class="server-row">
+        <input class="input" id="server-url" value="ws://localhost:3000" placeholder="ws://your-server:3000">
+        <button class="btn btn-secondary" onclick="connectServer()">Connect</button>
+      </div>
+      <div class="status-badge" id="server-status">
+        <div class="dot dot-red" id="srv-dot"></div>
+        <span id="srv-text">Not connected — enter server address above</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Name -->
+    <div class="field-group">
+      <div class="field-label">Your Name</div>
+      <input class="input" id="player-name" placeholder="Enter your name" maxlength="20" value="Player">
+    </div>
+
+    <!-- Actions (hidden until connected) -->
+    <div id="lobby-actions" style="display:none;flex-direction:column;align-items:center;gap:20px;width:100%;">
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-host" onclick="hostGame()">⚔ Host Game</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field-group">
+        <div class="field-label">Join with Room Code</div>
+        <input class="input code-input" id="join-code" maxlength="4" placeholder="CODE" oninput="this.value=this.value.toUpperCase()">
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="joinGame()">→ Join Game</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Waiting panel (shown after hosting) -->
+    <div id="lobby-waiting" style="display:none;flex-direction:column;align-items:center;gap:14px;width:100%;">
+      <div class="field-label">Share this code with your opponent</div>
+      <div class="big-code" id="room-code-display" title="Click to copy" onclick="copyCode()">----</div>
+      <div class="status-badge">
+        <div class="dot dot-yellow"></div>
+        <span>Waiting for opponent to join...</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="cancelHost()">✕ Cancel</button>
+      </div>
+      <div class="tip">Open this page on another device, connect to the same server,<br>and enter the code above to join.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── GAME ───────────────────────────────────────────────────────────── -->
+<div class="view hidden" id="view-game">
+  <div id="hud">
+    <div class="hud-player hp1" id="hud-p1">
+      <div class="hud-name" id="p1-name">P1</div>
+      <div class="hud-stars" id="p1-stars"></div>
+      <div class="hud-count" id="p1-count">0 units</div>
+    </div>
+    <div id="hud-mid">
+      <div id="round-lbl">ROUND 1/3</div>
+      <div id="timer" class="t-ok">20</div>
+    </div>
+    <div class="hud-player hp2" id="hud-p2">
+      <div class="hud-name" id="p2-name">P2</div>
+      <div class="hud-stars" id="p2-stars"></div>
+      <div class="hud-count" id="p2-count">0 units</div>
+    </div>
+  </div>
+
+  <div id="status">Waiting for round to start...</div>
+
+  <div id="board-wrap">
+    <div id="board"></div>
+  </div>
+
+  <div id="deck-area">
+    <div id="deck"></div>
+    <div id="scoreboard">
+      <div class="sb-row"><span class="sb-label">YOUR</span><span class="sb-val blue" id="my-count">0</span></div>
+      <div class="sb-row"><span class="sb-label">ENEMY</span><span class="sb-val red" id="en-count">0</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── END ────────────────────────────────────────────────────────────── -->
+<div class="view hidden" id="view-end">
+  <div id="end-card">
+    <div class="e-label">Match Complete</div>
+    <div id="end-title">—</div>
+    <div id="end-stars"></div>
+    <div id="end-detail"></div>
+    <button class="btn btn-primary" style="margin-top:10px" onclick="goLobby()">Return to Lobby</button>
+  </div>
+</div>
+
+<!-- ── ROUND BANNER ──────────────────────────────────────────────────── -->
+<div id="banner">
+  <div id="banner-inner">
+    <div class="b-label">Round</div>
+    <div class="b-num" id="b-num">1</div>
+  </div>
+</div>
+
+<!-- ── DISCONNECT OVERLAY ─────────────────────────────────────────────── -->
+<div id="disc-overlay">
+  <div id="disc-box">
+    <div class="disc-icon">⚡</div>
+    <div class="disc-title">Opponent Disconnected</div>
+    <div class="disc-msg">Your opponent has left the game.<br>You win by default!</div>
+    <button class="btn btn-primary" style="margin-top:8px" onclick="goLobby()">Back to Lobby</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  UNIT LIBRARY
+// ══════════════════════════════════════════════
+const UNITS = [
+  { id:'soldier', name:'Soldier', hp:80, dmg:15,
+    svg: c=>`<svg viewBox="0 0 36 36" fill="none">
+      <circle cx="18" cy="10" r="7" fill="${c}" opacity="0.9"/>
+      <rect x="11" y="18" width="14" height="12" rx="3" fill="${c}" opacity="0.85"/>
+      <rect x="8" y="20" width="4" height="9" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="24" y="20" width="4" height="9" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="13" y="30" width="4" height="5" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="19" y="30" width="4" height="5" rx="2" fill="${c}" opacity="0.7"/>
+    </svg>`},
+  { id:'knight', name:'Knight', hp:150, dmg:22,
+    svg: c=>`<svg viewBox="0 0 36 36" fill="none">
+      <ellipse cx="18" cy="9" rx="8" ry="7" fill="${c}" opacity="0.95"/>
+      <rect x="14" y="4" width="8" height="3" rx="1" fill="rgba(255,255,255,0.3)"/>
+      <rect x="10" y="16" width="16" height="14" rx="3" fill="${c}" opacity="0.9"/>
+      <rect x="7" y="18" width="5" height="11" rx="2" fill="${c}" opacity="0.8"/>
+      <rect x="24" y="18" width="5" height="11" rx="2" fill="${c}" opacity="0.8"/>
+      <rect x="11" y="30" width="5" height="5" rx="2" fill="${c}" opacity="0.8"/>
+      <rect x="20" y="30" width="5" height="5" rx="2" fill="${c}" opacity="0.8"/>
+      <rect x="6" y="17" width="2" height="14" rx="1" fill="rgba(255,255,255,0.22)"/>
+    </svg>`},
+  { id:'archer', name:'Archer', hp:55, dmg:28,
+    svg: c=>`<svg viewBox="0 0 36 36" fill="none">
+      <circle cx="17" cy="9" r="6" fill="${c}" opacity="0.9"/>
+      <rect x="11" y="16" width="12" height="11" rx="3" fill="${c}" opacity="0.85"/>
+      <rect x="8" y="18" width="4" height="8" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="22" y="18" width="4" height="8" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="12" y="27" width="4" height="6" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="18" y="27" width="4" height="6" rx="2" fill="${c}" opacity="0.7"/>
+      <line x1="30" y1="9" x2="30" y2="25" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M27 11 Q30 9 33 11" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <path d="M27 23 Q30 25 33 23" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    </svg>`},
+  { id:'mage', name:'Mage', hp:45, dmg:38,
+    svg: c=>`<svg viewBox="0 0 36 36" fill="none">
+      <circle cx="18" cy="9" r="6" fill="${c}" opacity="0.9"/>
+      <path d="M12 16 L24 16 L22 27 L14 27 Z" fill="${c}" opacity="0.85"/>
+      <rect x="9" y="18" width="4" height="8" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="22" y="18" width="4" height="8" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="13" y="27" width="4" height="6" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="19" y="27" width="4" height="6" rx="2" fill="${c}" opacity="0.7"/>
+      <circle cx="18" cy="4" r="3" fill="rgba(255,255,255,0.5)"/>
+      <circle cx="18" cy="4" r="1.5" fill="rgba(255,255,255,0.9)"/>
+      <circle cx="27" cy="19" r="4.5" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+      <circle cx="27" cy="19" r="2" fill="rgba(255,255,255,0.35)"/>
+    </svg>`},
+  { id:'tank', name:'Tank', hp:220, dmg:12,
+    svg: c=>`<svg viewBox="0 0 36 36" fill="none">
+      <rect x="8" y="4" width="20" height="17" rx="5" fill="${c}" opacity="0.95"/>
+      <rect x="6" y="8" width="4" height="10" rx="2" fill="${c}" opacity="0.8"/>
+      <rect x="26" y="8" width="4" height="10" rx="2" fill="${c}" opacity="0.8"/>
+      <rect x="5" y="21" width="26" height="12" rx="4" fill="${c}" opacity="0.9"/>
+      <rect x="3" y="23" width="6" height="8" rx="2" fill="${c}" opacity="0.75"/>
+      <rect x="27" y="23" width="6" height="8" rx="2" fill="${c}" opacity="0.75"/>
+      <rect x="14" y="1" width="8" height="5" rx="2" fill="rgba(255,255,255,0.28)"/>
+      <rect x="8" y="24" width="20" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
+    </svg>`},
+];
+
+const BLUE = '#38bdf8', RED = '#fb7185';
+const ROWS = 10, COLS = 10, CELL = 56;
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let ws = null;
+let myRole = null;     // 'p1' | 'p2'
+let myName = 'Player';
+let selectedCard = null;
+let localUnits = {};   // id -> { el, hp, maxHp, team, typeId, row, col }
+let roundActive = false;
+let gameData = { round:1, p1Stars:0, p2Stars:0, p1Name:'P1', p2Name:'P2' };
+
+// ══════════════════════════════════════════════
+//  VIEW MANAGEMENT
+// ══════════════════════════════════════════════
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ══════════════════════════════════════════════
+//  WEBSOCKET
+// ══════════════════════════════════════════════
+function connectServer() {
+  const url = document.getElementById('server-url').value.trim();
+  if (!url) return;
+  setConnStatus('connecting');
+
+  if (ws) { ws.close(); ws = null; }
+
+  try { ws = new WebSocket(url); }
+  catch(e) { setConnStatus('error', 'Invalid URL'); return; }
+
+  ws.onopen = () => {
+    setConnStatus('connected');
+    document.getElementById('lobby-actions').style.display = 'flex';
+    document.getElementById('lobby-actions').style.flexDirection = 'column';
+    document.getElementById('lobby-actions').style.gap = '20px';
+    startPing();
+  };
+
+  ws.onclose = () => {
+    setConnStatus('disconnected');
+    document.getElementById('lobby-actions').style.display = 'none';
+  };
+
+  ws.onerror = () => setConnStatus('error', 'Connection failed');
+
+  ws.onmessage = e => {
+    let msg;
+    try { msg = JSON.parse(e.data); } catch { return; }
+    handleMessage(msg);
+  };
+}
+
+function send(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+}
+
+let pingInt = null;
+function startPing() {
+  clearInterval(pingInt);
+  pingInt = setInterval(() => send({ type:'PING' }), 5000);
+}
+
+function setConnStatus(state, detail) {
+  const dot = document.getElementById('conn-dot');
+  const text = document.getElementById('conn-text');
+  const sdot = document.getElementById('srv-dot');
+  const stext = document.getElementById('srv-text');
+
+  const configs = {
+    connected:    { cls:'dot-green', label:'CONNECTED',     sdot:'dot-green', stxt:'Connected to server' },
+    connecting:   { cls:'dot-yellow',label:'CONNECTING...',  sdot:'dot-yellow',stxt:'Connecting...' },
+    disconnected: { cls:'dot-red',   label:'DISCONNECTED',   sdot:'dot-red',   stxt:'Disconnected from server' },
+    error:        { cls:'dot-red',   label:'ERROR',          sdot:'dot-red',   stxt: detail || 'Connection error' },
+  };
+  const c = configs[state] || configs.disconnected;
+  dot.className = `dot ${c.cls}`;
+  text.textContent = c.label;
+  sdot.className = `dot ${c.sdot}`;
+  stext.textContent = c.stxt;
+}
+
+// ══════════════════════════════════════════════
+//  LOBBY ACTIONS
+// ══════════════════════════════════════════════
+function hostGame() {
+  myName = document.getElementById('player-name').value.trim() || 'Player 1';
+  send({ type:'CREATE_ROOM', name: myName });
+}
+
+function joinGame() {
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (code.length !== 4) { alert('Enter a 4-character room code'); return; }
+  myName = document.getElementById('player-name').value.trim() || 'Player 2';
+  send({ type:'JOIN_ROOM', code, name: myName });
+}
+
+function cancelHost() {
+  document.getElementById('lobby-waiting').style.display = 'none';
+  document.getElementById('lobby-actions').style.display = 'flex';
+}
+
+function copyCode() {
+  const code = document.getElementById('room-code-display').textContent;
+  navigator.clipboard.writeText(code).catch(() => {});
+}
+
+// ══════════════════════════════════════════════
+//  MESSAGE HANDLER
+// ══════════════════════════════════════════════
+function handleMessage(msg) {
+  switch(msg.type) {
+    case 'ROOM_CREATED':
+      myRole = 'p1';
+      document.getElementById('room-code-display').textContent = msg.code;
+      document.getElementById('lobby-actions').style.display = 'none';
+      document.getElementById('lobby-waiting').style.display = 'flex';
+      document.getElementById('lobby-waiting').style.flexDirection = 'column';
+      break;
+
+    case 'JOINED_ROOM':
+      myRole = msg.role;
+      break;
+
+    case 'ERROR':
+      alert('⚠ ' + msg.msg);
+      break;
+
+    case 'GAME_START':
+      gameData.p1Name = msg.p1Name;
+      gameData.p2Name = msg.p2Name;
+      if (myRole === 'p2') document.body.classList.add('role-p2');
+      initGame();
+      break;
+
+    case 'ROUND_START':
+      gameData.round = msg.round;
+      gameData.p1Stars = msg.p1Stars;
+      gameData.p2Stars = msg.p2Stars;
+      roundActive = true;
+      selectedCard = null;
+      document.querySelectorAll('.card').forEach(c=>c.classList.remove('sel'));
+      // Clear local units
+      Object.values(localUnits).forEach(u => u.el && u.el.remove());
+      localUnits = {};
+      showBanner(msg.round);
+      updateHUD();
+      setTimeout(() => setStatus('Select a unit — click your territory to deploy'), 1800);
+      break;
+
+    case 'TIMER':
+      updateTimer(msg.timeLeft);
+      break;
+
+    case 'TICK':
+      applyTick(msg);
+      break;
+
+    case 'UNIT_SPAWNED': {
+      const u = msg.unit;
+      if (!localUnits[u.id]) createUnitEl(u);
+      else moveUnitEl(localUnits[u.id], u.row, u.col);
+      break;
+    }
+
+    case 'SPAWN_DENIED':
+      setStatus('Cannot deploy there: ' + msg.reason);
+      break;
+
+    case 'ROUND_END':
+      roundActive = false;
+      const w = msg.winner === 'p1' ? gameData.p1Name : msg.winner === 'p2' ? gameData.p2Name : null;
+      const detail = w ? `${w} wins the round! (${msg.p1Count} vs ${msg.p2Count} units)` : `Draw! (${msg.p1Count} vs ${msg.p2Count} units)`;
+      setStatus(detail);
+      gameData.p1Stars = msg.p1Stars;
+      gameData.p2Stars = msg.p2Stars;
+      updateHUD();
+      break;
+
+    case 'GAME_OVER':
+      showEndScreen(msg.p1Stars, msg.p2Stars);
+      break;
+
+    case 'OPPONENT_DISCONNECTED':
+      document.getElementById('disc-overlay').classList.add('show');
+      break;
+
+    case 'PONG':
+      // ping ok
+      break;
+  }
+}
+
+// ══════════════════════════════════════════════
+//  GAME INIT
+// ══════════════════════════════════════════════
+function initGame() {
+  buildBoard();
+  buildDeck();
+  showView('view-game');
+  updateHUD();
+  setStatus('Game starting...');
+}
+
+function buildBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const cell = document.createElement('div');
+      const isP1 = r >= 5;
+      cell.className = `cell ${isP1 ? 'z-p1' : 'z-p2'}`;
+      cell.dataset.r = r; cell.dataset.c = c;
+      cell.addEventListener('click', () => onCellClick(r, c));
+      board.appendChild(cell);
+    }
+  }
+}
+
+function buildDeck() {
+  const deck = document.getElementById('deck');
+  deck.innerHTML = '';
+  UNITS.forEach(ut => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'card-' + ut.id;
+    card.innerHTML = `${ut.svg(BLUE)}<div class="c-name">${ut.name}</div><div class="c-stat"><span>❤${ut.hp}</span><span>⚔${ut.dmg}</span></div>`;
+    card.addEventListener('click', () => {
+      selectedCard = ut;
+      document.querySelectorAll('.card').forEach(c=>c.classList.remove('sel'));
+      card.classList.add('sel');
+      setStatus(`${ut.name} ready — click your territory`);
+    });
+    deck.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════
+//  CELL CLICK
+// ══════════════════════════════════════════════
+function onCellClick(r, c) {
+  if (!roundActive) return;
+  if (!selectedCard) { setStatus('Choose a unit card first!'); return; }
+  // Zone check
+  const myZone = (myRole === 'p1' && r >= 5) || (myRole === 'p2' && r < 5);
+  if (!myZone) { setStatus('Deploy only in your own territory!'); return; }
+  send({ type:'SPAWN', typeId: selectedCard.id, row: r, col: c });
+}
+
+// ══════════════════════════════════════════════
+//  UNIT RENDERING
+// ══════════════════════════════════════════════
+function createUnitEl(data) {
+  const ut = UNITS.find(u => u.id === data.typeId);
+  if (!ut) return;
+  const color = data.team === 'p1' ? BLUE : RED;
+  const el = document.createElement('div');
+  el.className = `unit ${data.team === 'p1' ? 'blue' : 'red'}`;
+  el.id = 'u' + data.id;
+  el.innerHTML = `<div class="hp-bar"><div class="hp-fill" style="width:100%"></div></div>${ut.svg(color)}`;
+  posEl(el, data.row, data.col);
+  document.getElementById('board').appendChild(el);
+  localUnits[data.id] = { el, hp: data.hp, maxHp: data.maxHp, team: data.team, typeId: data.typeId, row: data.row, col: data.col };
+}
+
+function posEl(el, r, c) {
+  el.style.top  = (r * CELL + 2) + 'px';
+  el.style.left = (c * CELL + 2) + 'px';
+}
+
+function moveUnitEl(u, r, c) {
+  u.row = r; u.col = c;
+  posEl(u.el, r, c);
+}
+
+function updateHpBar(u, hp) {
+  u.hp = hp;
+  u.el.querySelector('.hp-fill').style.width = Math.max(0, hp / u.maxHp * 100) + '%';
+}
+
+function killUnit(id) {
+  const u = localUnits[id];
+  if (!u) return;
+  u.el.style.animation = 'u-die 0.4s ease forwards';
+  setTimeout(() => u.el && u.el.remove(), 400);
+  delete localUnits[id];
+}
+
+function applyTick(msg) {
+  // Update positions and HP from server
+  msg.units.forEach(s => {
+    let u = localUnits[s.id];
+    if (!u) {
+      createUnitEl(s);
+      u = localUnits[s.id];
+    }
+    if (!u) return;
+    if (u.row !== s.row || u.col !== s.col) moveUnitEl(u, s.row, s.col);
+    if (u.hp !== s.hp) updateHpBar(u, s.hp);
+  });
+
+  // Process events for effects
+  if (msg.events) {
+    msg.events.forEach(ev => {
+      if (ev.type === 'attack') {
+        const attacker = localUnits[ev.attackerId];
+        if (attacker) {
+          attacker.el.classList.remove('attacking');
+          void attacker.el.offsetWidth;
+          attacker.el.classList.add('attacking');
+          setTimeout(() => attacker.el && attacker.el.classList.remove('attacking'), 350);
+        }
+        const target = localUnits[ev.targetId];
+        if (target) spawnDmgNum(target, ev.dmg);
+      }
+      if (ev.type === 'death') killUnit(ev.unitId);
+    });
+  }
+
+  // Remove units no longer in server state
+  const serverIds = new Set(msg.units.map(u => u.id));
+  Object.keys(localUnits).forEach(id => {
+    if (!serverIds.has(Number(id))) killUnit(Number(id));
+  });
+
+  updateCounts();
+}
+
+function spawnDmgNum(u, dmg) {
+  const board = document.getElementById('board');
+  const el = document.createElement('div');
+  el.className = `dmg ${u.team === 'p1' ? 'blue' : 'red'}`;
+  el.textContent = `-${dmg}`;
+  el.style.top  = (u.row * CELL + 8) + 'px';
+  el.style.left = (u.col * CELL + 16) + 'px';
+  board.appendChild(el);
+  setTimeout(() => el.remove(), 900);
+}
+
+// ══════════════════════════════════════════════
+//  HUD
+// ══════════════════════════════════════════════
+function updateHUD() {
+  document.getElementById('round-lbl').textContent = `ROUND ${gameData.round}/3`;
+  document.getElementById('p1-name').textContent = myRole === 'p1' ? `${gameData.p1Name} (YOU)` : gameData.p1Name;
+  document.getElementById('p2-name').textContent = myRole === 'p2' ? `${gameData.p2Name} (YOU)` : gameData.p2Name;
+  renderStars('p1-stars', gameData.p1Stars);
+  renderStars('p2-stars', gameData.p2Stars);
+  updateCounts();
+}
+
+function updateTimer(t) {
+  const el = document.getElementById('timer');
+  el.textContent = t;
+  el.className = t > 10 ? 't-ok' : t > 5 ? 't-warn' : 't-hot';
+}
+
+function updateCounts() {
+  const p1 = Object.values(localUnits).filter(u => u.team === 'p1').length;
+  const p2 = Object.values(localUnits).filter(u => u.team === 'p2').length;
+  document.getElementById('p1-count').textContent = `${p1} unit${p1!==1?'s':''}`;
+  document.getElementById('p2-count').textContent = `${p2} unit${p2!==1?'s':''}`;
+  const mine = myRole === 'p1' ? p1 : p2;
+  const enemy = myRole === 'p1' ? p2 : p1;
+  document.getElementById('my-count').textContent = mine;
+  document.getElementById('en-count').textContent = enemy;
+}
+
+function renderStars(elId, count) {
+  document.getElementById(elId).innerHTML =
+    [0,1].map(i=>`<span class="${i<count?'s-on':'s-off'}">★</span>`).join('');
+}
+
+function setStatus(msg) {
+  document.getElementById('status').textContent = msg;
+}
+
+function showBanner(n) {
+  const b = document.getElementById('banner');
+  document.getElementById('b-num').textContent = n;
+  b.classList.add('show');
+  setTimeout(() => b.classList.remove('show'), 2000);
+}
+
+// ══════════════════════════════════════════════
+//  END SCREEN
+// ══════════════════════════════════════════════
+function showEndScreen(p1Stars, p2Stars) {
+  roundActive = false;
+  let title, color;
+  if (p1Stars > p2Stars) {
+    title = myRole === 'p1' ? '🏆 You Win!' : `${gameData.p1Name} Wins`;
+    color = myRole === 'p1' ? 'var(--gold)' : 'var(--red)';
+  } else if (p2Stars > p1Stars) {
+    title = myRole === 'p2' ? '🏆 You Win!' : `${gameData.p2Name} Wins`;
+    color = myRole === 'p2' ? 'var(--gold)' : 'var(--red)';
+  } else {
+    title = "Draw!"; color = 'var(--text-mid)';
+  }
+  document.getElementById('end-title').textContent = title;
+  document.getElementById('end-title').style.color = color;
+  document.getElementById('end-stars').innerHTML =
+    `<span style="color:var(--blue)">${'★'.repeat(p1Stars)}${'☆'.repeat(2-p1Stars)}</span>` +
+    ` <span style="color:var(--border2)">vs</span> ` +
+    `<span style="color:var(--red)">${'★'.repeat(p2Stars)}${'☆'.repeat(2-p2Stars)}</span>`;
+  document.getElementById('end-detail').textContent =
+    `${gameData.p1Name}: ${p1Stars} ★  ·  ${gameData.p2Name}: ${p2Stars} ★`;
+  showView('view-end');
+}
+
+function goLobby() {
+  Object.values(localUnits).forEach(u => u.el && u.el.remove());
+  localUnits = {};
+  selectedCard = null;
+  myRole = null;
+  roundActive = false;
+  document.body.classList.remove('role-p2');
+  document.getElementById('disc-overlay').classList.remove('show');
+  document.getElementById('lobby-waiting').style.display = 'none';
+  document.getElementById('lobby-actions').style.display = ws && ws.readyState === WebSocket.OPEN ? 'flex' : 'none';
+  if (document.getElementById('lobby-actions').style.display === 'flex') {
+    document.getElementById('lobby-actions').style.flexDirection = 'column';
+    document.getElementById('lobby-actions').style.gap = '20px';
+  }
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('sel'));
+  showView('view-lobby');
+}
+
+// Init
+setConnStatus('disconnected');
+</script>
+</body>
+</html>
