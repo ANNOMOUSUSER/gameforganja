@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arena Battle — Multiplayer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg: #070a0f;
+  --bg2: #0c1018;
+  --panel: #111520;
+  --panel2: #161c28;
+  --panel3: #1c2435;
+  --border: #1e2a3d;
+  --border2: #263347;
+  --blue: #38bdf8;
+  --blue-dim: #0ea5e9;
+  --blue-glow: rgba(56,189,248,0.2);
+  --blue-deep: rgba(56,189,248,0.08);
+  --red: #fb7185;
+  --red-dim: #f43f5e;
+  --red-glow: rgba(251,113,133,0.2);
+  --red-deep: rgba(251,113,133,0.08);
+  --gold: #fbbf24;
+  --gold-glow: rgba(251,191,36,0.3);
+  --text: #e2e8f0;
+  --text-mid: #94a3b8;
+  --text-dim: #475569;
+  --green: #34d399;
+  --cell: 58px;
+  --font-display: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  overflow: hidden;
+}
+
+/* ── LOBBY ─────────────────────────────────────────────────── */
+#lobby {
+  width: 100%; height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+#lobby::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 30% 50%, rgba(56,189,248,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 70% 50%, rgba(251,113,133,0.06) 0%, transparent 70%);
+}
+
+.lobby-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+#lobby-card {
+  position: relative;
+  z-index: 2;
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: 24px;
+  padding: 48px 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  min-width: 420px;
+}
+
+.lobby-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.lobby-title h1 {
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--blue) 0%, #818cf8 50%, var(--red) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.lobby-title p {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.lobby-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2), transparent);
+}
+
+.lobby-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.lobby-section-title {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.room-input {
+  background: var(--panel2);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 0.3em;
+  color: var(--text);
+  text-align: center;
+  width: 100%;
+  text-transform: uppercase;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.room-input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-glow);
+}
+
+.room-input::placeholder { color: var(--text-dim); letter-spacing: 0.2em; }
+
+.btn-row { display: flex; gap: 10px; width: 100%; }
+
+.btn {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border2);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background 0.2s;
+}
+.btn:hover::after { background: rgba(255,255,255,0.05); }
+
+.btn-blue {
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 4px 20px rgba(14,165,233,0.3);
+}
+.btn-blue:hover { box-shadow: 0 6px 28px rgba(14,165,233,0.5); transform: translateY(-1px); }
+
+.btn-ghost {
+  background: var(--panel2);
+  color: var(--text-mid);
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+
+.room-code-display {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  letter-spacing: 0.4em;
+  color: var(--blue);
+  text-shadow: 0 0 20px var(--blue-glow);
+  padding: 16px 32px;
+  background: var(--blue-deep);
+  border: 1px solid rgba(56,189,248,0.2);
+  border-radius: 12px;
+  width: 100%;
+  text-align: center;
+}
+
+.lobby-status {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pulse-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.7); }
+}
+
+/* ── GAME LAYOUT ────────────────────────────────────────────── */
+#game {
+  display: none;
+  width: 100vw;
+  height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+#game.active { display: flex; }
+
+#game::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 35% at 50% 0%, rgba(251,113,133,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 35% at 50% 100%, rgba(56,189,248,0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* ── TOP HUD ─────────────────────────────────────────────────── */
+#top-hud {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 660px;
+  z-index: 10;
+}
+
+.hud-player {
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hud-player::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.hud-player.p1::before { background: linear-gradient(90deg, transparent, var(--blue), transparent); }
+.hud-player.p2::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+
+.hud-name {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+.p1 .hud-name { color: var(--blue); }
+.p2 .hud-name { color: var(--red); }
+
+.hud-stars {
+  font-size: 18px;
+  letter-spacing: 5px;
+}
+.star-on { color: var(--gold); filter: drop-shadow(0 0 4px var(--gold-glow)); }
+.star-off { color: var(--border2); }
+
+.hud-units {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+#hud-center {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 130px;
+}
+
+#round-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+#timer {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  transition: color 0.3s;
+  font-family: var(--font-mono);
+}
+#timer.ok { color: var(--text); }
+#timer.warn { color: var(--gold); }
+#timer.urgent { color: var(--red); animation: timer-shake 0.3s ease; }
+
+@keyframes timer-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* ── BOARD AREA ─────────────────────────────────────────────── */
+#arena {
+  position: relative;
+  display: flex;
+  z-index: 5;
+}
+
+#enemy-label, #player-label {
+  position: absolute;
+  left: -90px;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  width: 20px;
+  display: flex;
+  align-items: center;
+}
+
+#enemy-label { top: 0; height: calc(5 * var(--cell)); color: rgba(251,113,133,0.4); }
+#player-label { top: calc(5 * var(--cell)); height: calc(5 * var(--cell)); color: rgba(56,189,248,0.4); }
+
+#board-wrap {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 10px;
+  box-shadow: 0 16px 60px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+
+#board-wrap::before {
+  content: '';
+  position: absolute;
+  left: 10px; right: 10px;
+  top: calc(10px + 5 * var(--cell));
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(10, var(--cell));
+  grid-template-rows: repeat(10, var(--cell));
+  position: relative;
+}
+
+.cell {
+  width: var(--cell);
+  height: var(--cell);
+  border: 1px solid rgba(255,255,255,0.03);
+  position: relative;
+  cursor: default;
+  transition: background 0.15s;
+}
+
+.cell.p1-zone { background: rgba(56,189,248,0.02); cursor: pointer; }
+.cell.p2-zone { background: rgba(251,113,133,0.02); }
+.cell.p1-zone:hover { background: rgba(56,189,248,0.07); }
+.cell.p1-zone.blocked { cursor: not-allowed; }
+.cell.valid-target { background: rgba(56,189,248,0.1); box-shadow: inset 0 0 0 1px rgba(56,189,248,0.3); }
+
+/* For P2 (top player on other screen) the zones are reversed */
+body.is-p2 .cell.p1-zone { background: rgba(251,113,133,0.02); cursor: default; }
+body.is-p2 .cell.p2-zone { background: rgba(56,189,248,0.02); cursor: pointer; }
+body.is-p2 .cell.p1-zone:hover { background: rgba(251,113,133,0.02); }
+body.is-p2 .cell.p2-zone:hover { background: rgba(56,189,248,0.07); }
+body.is-p2 .cell.valid-target { background: rgba(56,189,248,0.1); box-shadow: inset 0 0 0 1px rgba(56,189,248,0.3); }
+
+/* ── UNITS ─────────────────────────────────────────────────── */
+.unit {
+  position: absolute;
+  width: calc(var(--cell) - 4px);
+  height: calc(var(--cell) - 4px);
+  top: 2px;
+  left: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+  z-index: 10;
+  transition: top 0.4s cubic-bezier(0.4,0,0.2,1), left 0.4s cubic-bezier(0.4,0,0.2,1);
+  animation: unit-spawn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+@keyframes unit-spawn {
+  from { opacity: 0; transform: scale(0.4) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes unit-attack {
+  0% { transform: scale(1); filter: brightness(1); }
+  35% { transform: scale(1.3); filter: brightness(1.8); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes unit-die {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0) rotate(45deg); }
+}
+
+.unit.attacking { animation: unit-attack 0.35s ease forwards; }
+
+.unit svg { width: 36px; height: 36px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.8)); }
+
+.hp-track {
+  width: 48px;
+  height: 3px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 2px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+}
+
+.hp-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.unit.blue .hp-fill { background: linear-gradient(90deg, #0ea5e9, #38bdf8); box-shadow: 0 0 4px rgba(56,189,248,0.6); }
+.unit.red .hp-fill { background: linear-gradient(90deg, #f43f5e, #fb7185); box-shadow: 0 0 4px rgba(251,113,133,0.6); }
+
+/* ── DECK PANEL ─────────────────────────────────────────────── */
+#bottom-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 10;
+  width: 660px;
+}
+
+#deck {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.card {
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 10px 8px;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), border-color 0.18s, box-shadow 0.18s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--blue);
+  transform: scaleX(0);
+  transition: transform 0.2s;
+}
+
+.card:hover { transform: translateY(-5px) scale(1.02); border-color: rgba(56,189,248,0.3); }
+.card:hover::before { transform: scaleX(1); }
+
+.card.selected {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--blue-glow), 0 8px 24px rgba(56,189,248,0.25);
+  transform: translateY(-5px);
+  background: var(--panel2);
+}
+.card.selected::before { transform: scaleX(1); }
+
+.card svg { width: 26px; height: 26px; }
+.card-name { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-align: center; }
+.card-stat { font-size: 9px; color: var(--text-dim); font-family: var(--font-mono); display: flex; gap: 6px; }
+
+#side-info {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 100px;
+}
+
+#side-info .si-label {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+#side-info .si-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--green);
+  font-family: var(--font-mono);
+}
+
+/* ── STATUS BAR ─────────────────────────────────────────────── */
+#status-bar {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-align: center;
+  width: 660px;
+  z-index: 10;
+}
+
+/* ── END OVERLAY ─────────────────────────────────────────────── */
+#end-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(12px);
+  z-index: 200;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+#end-overlay.show { display: flex; }
+
+#end-card {
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: 28px;
+  padding: 56px 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  position: relative;
+  overflow: hidden;
+}
+
+#end-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--blue), #818cf8, var(--red));
+}
+
+.end-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+#end-winner {
+  font-size: 52px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.end-stars { font-size: 32px; letter-spacing: 8px; }
+.end-score { font-family: var(--font-mono); font-size: 13px; color: var(--text-dim); }
+
+.btn-end {
+  margin-top: 8px;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 40px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(14,165,233,0.3);
+}
+.btn-end:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(14,165,233,0.5); }
+
+/* ── ROUND TRANSITION ─────────────────────────────────────────── */
+#round-banner {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+#round-banner.show { display: flex; }
+
+#round-banner-inner {
+  text-align: center;
+  animation: banner-in 0.4s cubic-bezier(0.34,1.56,0.64,1), banner-out 0.4s ease 1.4s forwards;
+}
+
+@keyframes banner-in {
+  from { opacity: 0; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes banner-out {
+  to { opacity: 0; transform: scale(1.1); }
+}
+
+.banner-round {
+  font-size: 14px;
+  letter-spacing: 0.3em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.banner-num {
+  font-size: 80px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--blue), #818cf8, var(--red));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* ── PING INDICATOR ─────────────────────────────────────────── */
+#ping {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 999;
+}
+
+#ping-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+
+#ping-dot.disconnected { background: var(--red); box-shadow: 0 0 6px var(--red); }
+#ping-dot.waiting { background: var(--gold); box-shadow: 0 0 6px var(--gold); animation: pulse-dot 1s ease-in-out infinite; }
+
+/* ── FLOATING DAMAGE NUMBERS ─────────────────────────────────── */
+@keyframes dmg-float {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-30px); }
+}
+
+.dmg-num {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 20;
+  animation: dmg-float 0.8s ease forwards;
+}
+.dmg-num.blue { color: var(--blue); }
+.dmg-num.red { color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- PING -->
+<div id="ping">
+  <div id="ping-dot" class="waiting"></div>
+  <span id="ping-text">OFFLINE</span>
+</div>
+
+<!-- ── LOBBY ──────────────────────────────────────────────────────────────── -->
+<div id="lobby">
+  <div class="lobby-grid"></div>
+  <div id="lobby-card">
+    <div class="lobby-title">
+      <h1>ARENA</h1>
+      <p>Real-time Multiplayer Battle</p>
+    </div>
+    <div class="lobby-divider"></div>
+
+    <!-- CREATE -->
+    <div class="lobby-section" id="section-create">
+      <div class="lobby-section-title">Create a Room</div>
+      <div class="btn-row">
+        <button class="btn btn-blue" onclick="createRoom()">⚔ Host Game</button>
+      </div>
+    </div>
+
+    <div class="lobby-divider"></div>
+
+    <!-- JOIN -->
+    <div class="lobby-section" id="section-join">
+      <div class="lobby-section-title">Join a Room</div>
+      <input class="room-input" id="join-code" maxlength="4" placeholder="CODE" oninput="this.value=this.value.toUpperCase()">
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="joinRoom()">→ Join Game</button>
+      </div>
+    </div>
+
+    <!-- WAITING -->
+    <div class="lobby-section" id="section-waiting" style="display:none">
+      <div class="lobby-section-title">Room Code — Share with opponent</div>
+      <div class="room-code-display" id="room-code-display">----</div>
+      <div class="lobby-status">
+        <div class="pulse-dot"></div>
+        <span id="wait-msg">Waiting for opponent to join...</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="cancelWait()">✕ Cancel</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);text-align:center;font-family:var(--font-mono);">
+        💡 Open this page in another tab to play against yourself
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── GAME ───────────────────────────────────────────────────────────────── -->
+<div id="game">
+  <div id="top-hud">
+    <div class="hud-player p1" id="hud-p1">
+      <div class="hud-name" id="p1-name">Player 1</div>
+      <div class="hud-stars" id="p1-stars"></div>
+      <div class="hud-units" id="p1-units">0 units</div>
+    </div>
+    <div id="hud-center">
+      <div id="round-label">ROUND 1/3</div>
+      <div id="timer" class="ok">20</div>
+    </div>
+    <div class="hud-player p2" id="hud-p2">
+      <div class="hud-name" id="p2-name">Player 2</div>
+      <div class="hud-stars" id="p2-stars"></div>
+      <div class="hud-units" id="p2-units">0 units</div>
+    </div>
+  </div>
+
+  <div id="status-bar">Select a unit card below, then click your territory to deploy</div>
+
+  <div id="arena">
+    <div id="enemy-label">ENEMY ZONE</div>
+    <div id="player-label">YOUR ZONE</div>
+    <div id="board-wrap">
+      <div id="board"></div>
+    </div>
+  </div>
+
+  <div id="bottom-panel">
+    <div id="deck"></div>
+    <div id="side-info">
+      <div class="si-label">Your Units</div>
+      <div class="si-value" id="my-unit-count">0</div>
+      <div class="si-label" style="margin-top:6px">Enemy</div>
+      <div class="si-value" id="en-unit-count" style="color:var(--red)">0</div>
+    </div>
+  </div>
+</div>
+
+<!-- ROUND BANNER -->
+<div id="round-banner">
+  <div id="round-banner-inner">
+    <div class="banner-round">Round</div>
+    <div class="banner-num" id="banner-num">1</div>
+  </div>
+</div>
+
+<!-- END OVERLAY -->
+<div id="end-overlay">
+  <div id="end-card">
+    <div class="end-eyebrow">Match Complete</div>
+    <div id="end-winner">—</div>
+    <div class="end-stars" id="end-stars"></div>
+    <div class="end-score" id="end-score"></div>
+    <button class="btn-end" onclick="returnToLobby()">Return to Lobby</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  UNIT LIBRARY
+// ═══════════════════════════════════════════════════════════════
+
+const UNITS = [
+  { id:'soldier', name:'Soldier', hp:80, dmg:15, spd:1,
+    svg: c => `<svg viewBox="0 0 36 36" fill="none">
+      <circle cx="18" cy="10" r="7" fill="${c}" opacity="0.9"/>
+      <rect x="11" y="18" width="14" height="12" rx="3" fill="${c}" opacity="0.85"/>
+      <rect x="8" y="20" width="4" height="9" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="24" y="20" width="4" height="9" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="13" y="30" width="4" height="5" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="19" y="30" width="4" height="5" rx="2" fill="${c}" opacity="0.7"/>
+    </svg>`},
+  { id:'knight', name:'Knight', hp:150, dmg:22, spd:1,
+    svg: c => `<svg viewBox="0 0 36 36" fill="none">
+      <ellipse cx="18" cy="9" rx="8" ry="7" fill="${c}" opacity="0.95"/>
+      <rect x="14" y="4" width="8" height="3" rx="1" fill="rgba(255,255,255,0.3)"/>
+      <rect x="10" y="16" width="16" height="14" rx="3" fill="${c}" opacity="0.9"/>
+      <rect x="7" y="18" width="5" height="11" rx="2" fill="${c}" opacity="0.8"/>
+      <rect x="24" y="18" width="5" height="11" rx="2" fill="${c}" opacity="0.8"/>
+      <rect x="11" y="30" width="5" height="5" rx="2" fill="${c}" opacity="0.8"/>
+      <rect x="20" y="30" width="5" height="5" rx="2" fill="${c}" opacity="0.8"/>
+      <rect x="6" y="17" width="2" height="14" rx="1" fill="rgba(255,255,255,0.25)"/>
+    </svg>`},
+  { id:'archer', name:'Archer', hp:55, dmg:28, spd:1,
+    svg: c => `<svg viewBox="0 0 36 36" fill="none">
+      <circle cx="17" cy="9" r="6" fill="${c}" opacity="0.9"/>
+      <rect x="11" y="16" width="12" height="11" rx="3" fill="${c}" opacity="0.85"/>
+      <rect x="8" y="18" width="4" height="8" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="22" y="18" width="4" height="8" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="12" y="27" width="4" height="6" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="18" y="27" width="4" height="6" rx="2" fill="${c}" opacity="0.7"/>
+      <line x1="30" y1="9" x2="30" y2="25" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M27 11 Q30 9 33 11" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <path d="M27 23 Q30 25 33 23" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    </svg>`},
+  { id:'mage', name:'Mage', hp:45, dmg:38, spd:1,
+    svg: c => `<svg viewBox="0 0 36 36" fill="none">
+      <circle cx="18" cy="9" r="6" fill="${c}" opacity="0.9"/>
+      <path d="M12 16 L24 16 L22 27 L14 27 Z" fill="${c}" opacity="0.85"/>
+      <rect x="9" y="18" width="4" height="8" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="22" y="18" width="4" height="8" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="13" y="27" width="4" height="6" rx="2" fill="${c}" opacity="0.7"/>
+      <rect x="19" y="27" width="4" height="6" rx="2" fill="${c}" opacity="0.7"/>
+      <circle cx="18" cy="4" r="3" fill="rgba(255,255,255,0.5)"/>
+      <circle cx="18" cy="4" r="1.5" fill="rgba(255,255,255,0.9)"/>
+      <circle cx="27" cy="19" r="4.5" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+      <circle cx="27" cy="19" r="2" fill="rgba(255,255,255,0.35)"/>
+    </svg>`},
+  { id:'tank', name:'Tank', hp:220, dmg:12, spd:1,
+    svg: c => `<svg viewBox="0 0 36 36" fill="none">
+      <rect x="8" y="4" width="20" height="17" rx="5" fill="${c}" opacity="0.95"/>
+      <rect x="6" y="8" width="4" height="10" rx="2" fill="${c}" opacity="0.8"/>
+      <rect x="26" y="8" width="4" height="10" rx="2" fill="${c}" opacity="0.8"/>
+      <rect x="5" y="21" width="26" height="12" rx="4" fill="${c}" opacity="0.9"/>
+      <rect x="3" y="23" width="6" height="8" rx="2" fill="${c}" opacity="0.75"/>
+      <rect x="27" y="23" width="6" height="8" rx="2" fill="${c}" opacity="0.75"/>
+      <rect x="14" y="1" width="8" height="5" rx="2" fill="rgba(255,255,255,0.28)"/>
+      <rect x="8" y="24" width="20" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
+    </svg>`},
+];
+
+const BLUE_COL = '#38bdf8';
+const RED_COL = '#fb7185';
+const ROWS = 10, COLS = 10;
+
+// ═══════════════════════════════════════════════════════════════
+//  MULTIPLAYER via BroadcastChannel
+//  Both tabs open to same page; one is HOST (P1), one is GUEST (P2)
+//  They communicate via window.BroadcastChannel on channel = roomCode
+// ═══════════════════════════════════════════════════════════════
+
+let channel = null;
+let myRole = null; // 'p1' | 'p2'
+let roomCode = '';
+let connected = false;
+
+// ═══════════════════════════════════════════════════════════════
+//  GAME STATE  (authoritative on P1/HOST, synced to P2)
+// ═══════════════════════════════════════════════════════════════
+
+const G = {
+  round: 1, maxRounds: 3,
+  timeLeft: 20,
+  p1Stars: 0, p2Stars: 0,
+  units: [],
+  nextId: 0,
+  roundActive: false,
+  phase: 'lobby' // lobby | playing | end
+};
+
+let selectedCard = null;
+let timerInt = null;
+let loopInt = null;
+
+// ═══════════════════════════════════════════════════════════════
+//  CHANNEL MESSAGING
+// ═══════════════════════════════════════════════════════════════
+
+function send(type, data = {}) {
+  if (!channel) return;
+  channel.postMessage({ type, ...data });
+}
+
+function openChannel(code) {
+  if (channel) channel.close();
+  channel = new BroadcastChannel('arena-' + code);
+  channel.onmessage = onMessage;
+}
+
+function onMessage(e) {
+  const msg = e.data;
+  switch(msg.type) {
+    case 'GUEST_JOINED':
+      if (myRole === 'p1') {
+        connected = true;
+        setPingStatus('connected');
+        // Start game
+        send('START_GAME', { round: 1 });
+        startGame();
+      }
+      break;
+    case 'START_GAME':
+      if (myRole === 'p2') {
+        connected = true;
+        setPingStatus('connected');
+        startGame();
+      }
+      break;
+    case 'SPAWN':
+      // Other player spawned a unit
+      if (msg.team !== myRole) {
+        spawnUnit(UNITS.find(u => u.id === msg.unitId), msg.row, msg.col, msg.team);
+      }
+      break;
+    case 'SYNC_STATE':
+      // P1 sends authoritative state to P2
+      if (myRole === 'p2') {
+        applySync(msg.state);
+      }
+      break;
+    case 'ROUND_RESULT':
+      if (myRole === 'p2') {
+        G.p1Stars = msg.p1Stars;
+        G.p2Stars = msg.p2Stars;
+        G.round = msg.round;
+      }
+      break;
+    case 'GAME_OVER':
+      showEndScreen(msg.p1Stars, msg.p2Stars);
+      break;
+    case 'PING':
+      setPingStatus('connected');
+      break;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LOBBY
+// ═══════════════════════════════════════════════════════════════
+
+function createRoom() {
+  roomCode = randomCode();
+  myRole = 'p1';
+  openChannel(roomCode);
+  document.getElementById('section-create').style.display = 'none';
+  document.getElementById('section-join').style.display = 'none';
+  document.getElementById('section-waiting').style.display = 'flex';
+  document.getElementById('room-code-display').textContent = roomCode;
+  setPingStatus('waiting');
+}
+
+function joinRoom() {
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (code.length !== 4) { alert('Enter a 4-character room code'); return; }
+  roomCode = code;
+  myRole = 'p2';
+  openChannel(roomCode);
+  setPingStatus('waiting');
+  document.getElementById('wait-msg').textContent = 'Connecting to host...';
+  document.getElementById('section-create').style.display = 'none';
+  document.getElementById('section-join').style.display = 'none';
+  document.getElementById('section-waiting').style.display = 'flex';
+  document.getElementById('room-code-display').textContent = roomCode;
+  // Announce join
+  setTimeout(() => send('GUEST_JOINED'), 100);
+}
+
+function cancelWait() {
+  if (channel) { channel.close(); channel = null; }
+  myRole = null;
+  roomCode = '';
+  document.getElementById('section-create').style.display = 'flex';
+  document.getElementById('section-join').style.display = 'flex';
+  document.getElementById('section-waiting').style.display = 'none';
+  setPingStatus('offline');
+}
+
+function randomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length: 4}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+function setPingStatus(s) {
+  const dot = document.getElementById('ping-dot');
+  const txt = document.getElementById('ping-text');
+  dot.className = '';
+  if (s === 'connected') { dot.className = ''; dot.style.background = 'var(--green)'; dot.style.boxShadow = '0 0 6px var(--green)'; txt.textContent = 'CONNECTED'; }
+  else if (s === 'waiting') { dot.className = 'waiting'; dot.style.background = 'var(--gold)'; dot.style.boxShadow = '0 0 6px var(--gold)'; txt.textContent = 'WAITING'; }
+  else { dot.style.background = 'var(--red)'; dot.style.boxShadow = '0 0 6px var(--red)'; txt.textContent = 'OFFLINE'; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GAME INIT
+// ═══════════════════════════════════════════════════════════════
+
+function startGame() {
+  G.round = 1; G.p1Stars = 0; G.p2Stars = 0;
+  G.units = []; G.nextId = 0; G.roundActive = false;
+  G.phase = 'playing';
+
+  // If P2, body needs class for CSS zone reversal
+  if (myRole === 'p2') document.body.classList.add('is-p2');
+
+  // Names in HUD
+  document.getElementById('p1-name').textContent = myRole === 'p1' ? 'YOU (P1)' : 'OPPONENT';
+  document.getElementById('p2-name').textContent = myRole === 'p2' ? 'YOU (P2)' : 'OPPONENT';
+
+  document.getElementById('lobby').style.display = 'none';
+  document.getElementById('game').classList.add('active');
+
+  buildBoard();
+  buildDeck();
+  updateHUD();
+  startRound();
+}
+
+function buildBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const cell = document.createElement('div');
+      // P1 deploys bottom half (rows 5-9), P2 deploys top half (rows 0-4)
+      const isP1Zone = r >= 5;
+      const isP2Zone = r < 5;
+      cell.className = 'cell ' + (isP1Zone ? 'p1-zone' : 'p2-zone');
+      cell.dataset.r = r; cell.dataset.c = c;
+      cell.addEventListener('click', () => onCellClick(r, c));
+      board.appendChild(cell);
+    }
+  }
+}
+
+function buildDeck() {
+  const deck = document.getElementById('deck');
+  deck.innerHTML = '';
+  UNITS.forEach(ut => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'card-' + ut.id;
+    card.innerHTML = `
+      ${ut.svg(BLUE_COL)}
+      <div class="card-name">${ut.name}</div>
+      <div class="card-stat"><span>❤${ut.hp}</span><span>⚔${ut.dmg}</span></div>`;
+    card.addEventListener('click', () => selectCard(ut));
+    deck.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ROUND MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+function startRound() {
+  G.timeLeft = 20;
+  G.roundActive = true;
+
+  showRoundBanner(G.round);
+
+  setTimeout(() => {
+    updateHUD();
+    setStatus('Select a unit — deploy in your territory');
+    timerInt = setInterval(timerTick, 1000);
+    // Only P1 runs the game loop (authoritative)
+    if (myRole === 'p1') {
+      loopInt = setInterval(gameTick, 900);
+    }
+  }, 1800);
+}
+
+function showRoundBanner(num) {
+  const banner = document.getElementById('round-banner');
+  document.getElementById('banner-num').textContent = num;
+  banner.classList.add('show');
+  setTimeout(() => banner.classList.remove('show'), 2000);
+}
+
+function timerTick() {
+  G.timeLeft--;
+  updateHUD();
+  if (G.timeLeft <= 0) endRound();
+}
+
+function endRound() {
+  G.roundActive = false;
+  clearInterval(timerInt);
+  clearInterval(loopInt);
+
+  if (myRole !== 'p1') return; // only P1 handles round end authoritatively
+
+  const p1Count = G.units.filter(u => u.team === 'p1').length;
+  const p2Count = G.units.filter(u => u.team === 'p2').length;
+
+  if (p1Count > p2Count) G.p1Stars++;
+  else if (p2Count > p1Count) G.p2Stars++;
+
+  send('ROUND_RESULT', { p1Stars: G.p1Stars, p2Stars: G.p2Stars, round: G.round });
+  updateHUD();
+
+  const msg = p1Count > p2Count ? `Round ${G.round} → P1 wins (+1 ★)` :
+              p2Count > p1Count ? `Round ${G.round} → P2 wins (+1 ★)` : `Round ${G.round} → Draw!`;
+  setStatus(msg);
+
+  if (G.p1Stars >= 2 || G.p2Stars >= 2 || G.round >= G.maxRounds) {
+    setTimeout(() => {
+      const result = { p1Stars: G.p1Stars, p2Stars: G.p2Stars };
+      send('GAME_OVER', result);
+      showEndScreen(G.p1Stars, G.p2Stars);
+    }, 2000);
+    return;
+  }
+
+  G.round++;
+  setTimeout(() => {
+    G.units.forEach(u => { if(u.el) { u.el.style.animation = 'unit-die 0.4s ease forwards'; setTimeout(() => u.el && u.el.remove(), 400); } });
+    G.units = [];
+    syncStateToP2();
+    setTimeout(() => { updateHUD(); startRound(); }, 500);
+  }, 2500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CELL CLICK / SPAWN
+// ═══════════════════════════════════════════════════════════════
+
+function onCellClick(r, c) {
+  if (!G.roundActive) return;
+  if (!selectedCard) { setStatus('Choose a unit card first!'); return; }
+
+  // Check if it's my zone
+  const myZoneOk = (myRole === 'p1' && r >= 5) || (myRole === 'p2' && r < 5);
+  if (!myZoneOk) { setStatus('Deploy only in your own territory!'); return; }
+
+  if (isOccupied(r, c)) { setStatus('Cell occupied!'); return; }
+
+  const unit = spawnUnit(selectedCard, r, c, myRole);
+  if (unit) {
+    // Broadcast to opponent
+    send('SPAWN', { unitId: selectedCard.id, row: r, col: c, team: myRole });
+    if (myRole === 'p1') syncStateToP2();
+    setStatus(`${selectedCard.name} deployed!`);
+    updateHUD();
+  }
+}
+
+function selectCard(ut) {
+  selectedCard = ut;
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('card-' + ut.id).classList.add('selected');
+  setStatus(`${ut.name} selected — click your territory to deploy`);
+}
+
+function isOccupied(r, c) {
+  return G.units.some(u => u.row === r && u.col === c);
+}
+
+function spawnUnit(type, row, col, team) {
+  if (isOccupied(row, col)) return null;
+  const id = G.nextId++;
+  const el = document.createElement('div');
+  const color = team === 'p1' ? BLUE_COL : RED_COL;
+  el.className = `unit ${team === 'p1' ? 'blue' : 'red'}`;
+  el.id = `u${id}`;
+  el.innerHTML = `<div class="hp-track"><div class="hp-fill" style="width:100%"></div></div>${type.svg(color)}`;
+  placeUnitEl(el, row, col);
+  document.getElementById('board').appendChild(el);
+
+  const unit = { id, type, row, col, hp: type.hp, maxHp: type.hp, team, el };
+  G.units.push(unit);
+  return unit;
+}
+
+function placeUnitEl(el, row, col) {
+  el.style.top = (row * 58 + 2) + 'px';
+  el.style.left = (col * 58 + 2) + 'px';
+}
+
+function updateUnitEl(unit) {
+  placeUnitEl(unit.el, unit.row, unit.col);
+  unit.el.querySelector('.hp-fill').style.width = Math.max(0, unit.hp / unit.maxHp * 100) + '%';
+}
+
+function removeUnit(unit) {
+  unit.el.style.animation = 'unit-die 0.4s ease forwards';
+  setTimeout(() => unit.el && unit.el.remove(), 400);
+  G.units = G.units.filter(u => u.id !== unit.id);
+}
+
+function showDamage(unit, dmg) {
+  const board = document.getElementById('board');
+  const d = document.createElement('div');
+  d.className = `dmg-num ${unit.team === 'p1' ? 'blue' : 'red'}`;
+  d.textContent = `-${dmg}`;
+  d.style.top = (unit.row * 58 + 10) + 'px';
+  d.style.left = (unit.col * 58 + 20) + 'px';
+  board.appendChild(d);
+  setTimeout(() => d.remove(), 800);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GAME TICK (P1 authoritative)
+// ═══════════════════════════════════════════════════════════════
+
+function gameTick() {
+  if (!G.roundActive) return;
+  const snapshot = [...G.units];
+
+  snapshot.forEach(unit => {
+    if (unit.hp <= 0 || !G.units.find(u => u.id === unit.id)) return;
+
+    const enemies = G.units.filter(u => u.team !== unit.team && u.hp > 0);
+    if (!enemies.length) return;
+
+    const nearest = enemies.reduce((b, e) => dist(unit, e) < dist(unit, b) ? e : b, enemies[0]);
+
+    if (isAdj(unit, nearest)) {
+      // Attack
+      nearest.hp = Math.max(0, nearest.hp - unit.type.dmg);
+      unit.el.classList.remove('attacking');
+      void unit.el.offsetWidth;
+      unit.el.classList.add('attacking');
+      setTimeout(() => unit.el && unit.el.classList.remove('attacking'), 350);
+      showDamage(nearest, unit.type.dmg);
+      updateUnitEl(nearest);
+      if (nearest.hp <= 0) removeUnit(nearest);
+    } else {
+      // Move
+      const dr = Math.sign(nearest.row - unit.row);
+      const dc = Math.sign(nearest.col - unit.col);
+      const tries = [];
+      if (dr) tries.push([unit.row + dr, unit.col]);
+      if (dc) tries.push([unit.row, unit.col + dc]);
+      if (dr && dc) tries.push([unit.row + dr, unit.col + dc]);
+
+      for (const [nr, nc] of tries) {
+        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && !isOccupied(nr, nc)) {
+          unit.row = nr; unit.col = nc;
+          updateUnitEl(unit);
+          break;
+        }
+      }
+    }
+  });
+
+  syncStateToP2();
+  updateHUD();
+}
+
+function dist(a, b) { return Math.abs(a.row - b.row) + Math.abs(a.col - b.col); }
+function isAdj(a, b) { return Math.abs(a.row - b.row) <= 1 && Math.abs(a.col - b.col) <= 1 && !(a.row === b.row && a.col === b.col); }
+
+// ═══════════════════════════════════════════════════════════════
+//  SYNC STATE (P1 → P2)
+// ═══════════════════════════════════════════════════════════════
+
+function syncStateToP2() {
+  const serialized = G.units.map(u => ({
+    id: u.id, typeId: u.type.id, row: u.row, col: u.col,
+    hp: u.hp, maxHp: u.maxHp, team: u.team
+  }));
+  send('SYNC_STATE', {
+    state: {
+      units: serialized,
+      round: G.round, timeLeft: G.timeLeft,
+      p1Stars: G.p1Stars, p2Stars: G.p2Stars
+    }
+  });
+}
+
+function applySync(state) {
+  G.round = state.round;
+  G.timeLeft = state.timeLeft;
+  G.p1Stars = state.p1Stars;
+  G.p2Stars = state.p2Stars;
+
+  const board = document.getElementById('board');
+
+  // Remove units no longer in state
+  G.units.forEach(u => {
+    if (!state.units.find(s => s.id === u.id)) {
+      u.el.style.animation = 'unit-die 0.4s ease forwards';
+      setTimeout(() => u.el && u.el.remove(), 400);
+    }
+  });
+
+  // Update or create
+  state.units.forEach(s => {
+    let u = G.units.find(u => u.id === s.id);
+    if (!u) {
+      // Create new
+      const type = UNITS.find(t => t.id === s.typeId);
+      const el = document.createElement('div');
+      const color = s.team === 'p1' ? BLUE_COL : RED_COL;
+      el.className = `unit ${s.team === 'p1' ? 'blue' : 'red'}`;
+      el.id = `u${s.id}`;
+      el.innerHTML = `<div class="hp-track"><div class="hp-fill" style="width:${s.hp/s.maxHp*100}%"></div></div>${type.svg(color)}`;
+      placeUnitEl(el, s.row, s.col);
+      board.appendChild(el);
+      u = { id: s.id, type, row: s.row, col: s.col, hp: s.hp, maxHp: s.maxHp, team: s.team, el };
+      G.units.push(u);
+    } else {
+      u.row = s.row; u.col = s.col; u.hp = s.hp;
+      updateUnitEl(u);
+    }
+  });
+
+  G.units = G.units.filter(u => state.units.find(s => s.id === u.id));
+  updateHUD();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  HUD + STATUS
+// ═══════════════════════════════════════════════════════════════
+
+function updateHUD() {
+  document.getElementById('round-label').textContent = `ROUND ${G.round}/${G.maxRounds}`;
+  const t = document.getElementById('timer');
+  t.textContent = G.timeLeft;
+  t.className = G.timeLeft > 10 ? 'ok' : G.timeLeft > 5 ? 'warn' : 'urgent';
+
+  renderStars('p1-stars', G.p1Stars);
+  renderStars('p2-stars', G.p2Stars);
+
+  const p1u = G.units.filter(u => u.team === 'p1').length;
+  const p2u = G.units.filter(u => u.team === 'p2').length;
+  document.getElementById('p1-units').textContent = `${p1u} unit${p1u !== 1 ? 's' : ''}`;
+  document.getElementById('p2-units').textContent = `${p2u} unit${p2u !== 1 ? 's' : ''}`;
+
+  const myUnits = G.units.filter(u => u.team === myRole).length;
+  const enUnits = G.units.filter(u => u.team !== myRole).length;
+  document.getElementById('my-unit-count').textContent = myUnits;
+  document.getElementById('en-unit-count').textContent = enUnits;
+}
+
+function renderStars(elId, count) {
+  const el = document.getElementById(elId);
+  el.innerHTML = [0,1].map(i =>
+    `<span class="${i < count ? 'star-on' : 'star-off'}">★</span>`
+  ).join('');
+}
+
+function setStatus(msg) {
+  document.getElementById('status-bar').textContent = msg;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  END + RETURN
+// ═══════════════════════════════════════════════════════════════
+
+function showEndScreen(p1Stars, p2Stars) {
+  G.roundActive = false;
+  clearInterval(timerInt);
+  clearInterval(loopInt);
+
+  let winnerText, winnerColor;
+  if (p1Stars > p2Stars) {
+    winnerText = myRole === 'p1' ? '🏆 You Win!' : 'Opponent Wins';
+    winnerColor = myRole === 'p1' ? 'var(--gold)' : 'var(--red)';
+  } else if (p2Stars > p1Stars) {
+    winnerText = myRole === 'p2' ? '🏆 You Win!' : 'Opponent Wins';
+    winnerColor = myRole === 'p2' ? 'var(--gold)' : 'var(--red)';
+  } else {
+    winnerText = "It's a Draw";
+    winnerColor = 'var(--text-mid)';
+  }
+
+  document.getElementById('end-winner').textContent = winnerText;
+  document.getElementById('end-winner').style.color = winnerColor;
+  document.getElementById('end-stars').innerHTML =
+    `<span style="color:var(--blue)">${'★'.repeat(p1Stars)}${'☆'.repeat(2-p1Stars)}</span>` +
+    ` <span style="color:var(--border2)">vs</span> ` +
+    `<span style="color:var(--red)">${'★'.repeat(p2Stars)}${'☆'.repeat(2-p2Stars)}</span>`;
+  document.getElementById('end-score').textContent = `P1: ${p1Stars} stars  ·  P2: ${p2Stars} stars`;
+  document.getElementById('end-overlay').classList.add('show');
+}
+
+function returnToLobby() {
+  clearInterval(timerInt);
+  clearInterval(loopInt);
+  if (channel) { channel.close(); channel = null; }
+
+  G.units.forEach(u => u.el && u.el.remove());
+  G.units = [];
+  G.phase = 'lobby';
+  selectedCard = null;
+  myRole = null;
+  connected = false;
+
+  document.body.classList.remove('is-p2');
+  document.getElementById('end-overlay').classList.remove('show');
+  document.getElementById('game').classList.remove('active');
+  document.getElementById('lobby').style.display = 'flex';
+  document.getElementById('section-create').style.display = 'flex';
+  document.getElementById('section-join').style.display = 'flex';
+  document.getElementById('section-waiting').style.display = 'none';
+  document.getElementById('join-code').value = '';
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+  setPingStatus('offline');
+}
+
+// Init
+setPingStatus('offline');
+</script>
+</body>
+</html>
